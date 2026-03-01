@@ -1,22 +1,82 @@
 [
-    {
-        "nama": "Budi Setiawan",
-        "umur": 30,
-        "alamat": {
-            "jalan": "Jl. Pahlawan",
-            "kota": "Surabaya",
-            "provinsi": "Jawa Timur"
-        },
-        "hobi": ["membaca", "bersepeda"]
+  {
+    "nama": "Budi Setiawan",
+    "umur": 30,
+    "alamat": {
+      "jalan": "Jl. Pahlawan",
+      "kota": "Surabaya",
+      "provinsi": "Jawa Timur"
     },
-    {
-        "nama": "Ferdinan Lubis",
-        "umur": 25,
-        "alamat": {
-        "jalan": "Jl. Cipto",
-        "kota": "Jakarta",
-        "provinsi": "DKI Jakarta"
-        },
-        "hobi": ["menulis", "makan"]
-    }
+    "hobi": ["membaca", "bersepeda"]
+  },
+  {
+    "nama": "Ferdinan Lubis",
+    "umur": 25,
+    "alamat": {
+      "jalan": "Jl. Cipto",
+      "kota": "Jakarta",
+      "provinsi": "DKI Jakarta"
+    },
+    "hobi": ["menulis", "makan"]
+  },
+  {
+    "nama": "Siti Nurhaliza",
+    "umur": 28,
+    "alamat": {
+      "jalan": "Jl. Ahmad Yani",
+      "kota": "Bandung",
+      "provinsi": "Jawa Barat"
+    },
+    "hobi": ["musik", "fotografi", "traveling"]
+  },
+  {
+    "nama": "Rendra Wijaya",
+    "umur": 32,
+    "alamat": {
+      "jalan": "Jl. Sudirman",
+      "kota": "Medan",
+      "provinsi": "Sumatera Utara"
+    },
+    "hobi": ["olahraga", "coding"]
+  },
+  {
+    "nama": "Dewi Lestari",
+    "umur": 26,
+    "alamat": {
+      "jalan": "Jl. Gatot Subroto",
+      "kota": "Yogyakarta",
+      "provinsi": "DI Yogyakarta"
+    },
+    "hobi": ["melukis", "dancing"]
+  },
+  {
+    "nama": "Ahmad Hidayat",
+    "umur": 29,
+    "alamat": {
+      "jalan": "Jl. Merdeka",
+      "kota": "Bandung",
+      "provinsi": "Jawa Barat"
+    },
+    "hobi": ["gaming", "membaca novel"]
+  },
+  {
+    "nama": "Lisa Manobal",
+    "umur": 27,
+    "alamat": {
+      "jalan": "Jl. Diponegoro",
+      "kota": "Semarang",
+      "provinsi": "Jawa Tengah"
+    },
+    "hobi": ["bernyanyi", "cooking", "gardening"]
+  },
+  {
+    "nama": "Hendra Gunawan",
+    "umur": 31,
+    "alamat": {
+      "jalan": "Jl. Veteran",
+      "kota": "Malang",
+      "provinsi": "Jawa Timur"
+    },
+    "hobi": ["hiking", "fotografi"]
+  }
 ]
