@@ -20,7 +20,7 @@ class Movie {
   factory Movie.fromJson(Map<String, dynamic> json) {
     return Movie(
       id: json['id'] ?? '',
-      title: json['title'] ??'',
+      title: json['title'] ?? '',
       overview: json['overview'] ?? '',
       posterPath: json['poster_path'] ?? '',
       backdropPath: json['backdrop_path'] ?? '',
@@ -28,7 +28,17 @@ class Movie {
       voteAverage: (json['vote_average']).toDouble() ?? 0.0,
     );
   }
+
+  //  penambahan to method untuk mengubah objek movie menjadi map
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'overview': overview,
+      'poster_path': posterPath,
+      'backdrop_path': backdropPath,
+      'release_date': releaseDate,
+      'vote_average': voteAverage,
+    };
+  }
 }
-
-
-
