@@ -51,7 +51,7 @@ class _FavoriteScreenState extends State<FavoriteScreen> {
                     ),
                     SizedBox(height: 16),
                     Text(
-                      'Belum ada yang fil favorite',
+                      'Belum ada yang film favorite',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 20,
