@@ -5,15 +5,20 @@ import 'sign_in.dart';
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
-  Future<void> signOut(BuildContext context) async {
-    await FirebaseAuth.instance.signOut();
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (context) => SignInScreen()),
-      (route) => false, //hapus semua route sebelumnya
-    );
-  }
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
+Future<void> signOut(BuildContext context) async {
+  await FirebaseAuth.instance.signOut();
+  Navigator.pushAndRemoveUntil(
+    context,
+    MaterialPageRoute(builder: (context) => SignInScreen()),
+    (route) => false, //hapus semua route sebelumnya
+  );
+}
+
+class _HomeScreenState extends State<HomeScreen> {
   String? _idToken = "";
   String? _uid = "";
   String? _email = "";
@@ -23,7 +28,7 @@ class HomeScreen extends StatefulWidget {
       _uid = user.uid;
       _email = user.email;
       await user
-          .getIdTokenResult(true)
+          .getIdToken(true)
           .then(
             (v) => {
               setState(() {
