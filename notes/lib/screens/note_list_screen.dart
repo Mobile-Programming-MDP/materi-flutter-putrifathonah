@@ -21,7 +21,7 @@ class _NoteListScreenState extends State<NoteListScreen> {
           showDialog(
             context: context,
             builder: (context) {
-              return const NoteDialog();
+              return NoteDialog();
             },
           );
         },
@@ -37,100 +37,78 @@ class NoteList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<List<Note>>(
+    return StreamBuilder(
       stream: NoteService.getNoteList(),
       builder: (context, snapshot) {
         if (snapshot.hasError) {
-          return Center(child: Text('Error: ${snapshot.error}'));
+          return Text('Error: ${snapshot.error}');
         }
-
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return const Center(child: Text('Belum ada catatan'));
-        }
-
-        final notes = snapshot.data!;
-
-        return ListView(
-          padding: const EdgeInsets.only(bottom: 80),
-          children: notes.map((document) {
-            return Card(
-              child: InkWell(
-                onTap: () {
-                  showDialog(
-                    context: context,
-                    builder: (context) {
-                      return NoteDialog(note: document);
-                    },
-                  );
-                },
-                child: Column(
-                  children: [
-                    document.imageUrl != null &&
-                            document.imageUrl!.isNotEmpty &&
-                            Uri.tryParse(document.imageUrl!)?.hasAbsolutePath ==
-                                true
-                        ? ClipRRect(
-                            borderRadius: const BorderRadius.only(
-                              topLeft: Radius.circular(16),
-                              topRight: Radius.circular(16),
-                            ),
-                            child: Image.network(
-                              document.imageUrl!,
-                              fit: BoxFit.cover,
-                              alignment: Alignment.center,
-                              width: double.infinity,
-                              height: 150,
-                            ),
-                          )
-                        : Container(),
-                    ListTile(
-                      title: Text(document.title),
-                      subtitle: Text(document.description),
-                      trailing: InkWell(
-                        onTap: () {
-                          showDialog(
-                            context: context,
-                            builder: (BuildContext dialogContext) {
-                              return AlertDialog(
-                                title: const Text('Konfirmasi Hapus'),
-                                content: Text(
-                                  'Yakin ingin menghapus data "${document.title}"?',
-                                ),
-                                actions: <Widget>[
-                                  TextButton(
-                                    child: const Text('Cancel'),
-                                    onPressed: () {
-                                      Navigator.of(dialogContext).pop();
-                                    },
-                                  ),
-                                  TextButton(
-                                    child: const Text('Hapus'),
-                                    onPressed: () async {
-                                      await NoteService.deleteNote(document.id!);
-                                      Navigator.of(dialogContext).pop();
-                                    },
-                                  ),
-                                ],
-                              );
-                            },
-                          );
+        switch (snapshot.connectionState) {
+          case ConnectionState.waiting:
+            return const Center(child: CircularProgressIndicator());
+          default:
+            return ListView(
+              padding: const EdgeInsets.only(bottom: 80),
+              children: snapshot.data!.map((document) {
+                return Card(
+                  child: ListTile(
+                    onTap: () {
+                      showDialog(
+                        context: context,
+                        builder: (context) {
+                          return NoteDialog(note: document);
                         },
-                        child: const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 10),
-                          child: Icon(Icons.delete),
-                        ),
+                      );
+                    },
+                    title: Text(document.title),
+                    subtitle: Text(document.description),
+                    trailing: InkWell(
+                      onTap: () {
+                        showAlertDialog(context, document);
+                      },
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 10),
+                        child: Icon(Icons.delete),
                       ),
                     ),
-                  ],
-                ),
-              ),
+                  ),
+                );
+              }).toList(),
             );
-          }).toList(),
-        );
+        }
+      },
+    );
+  }
+
+  void showAlertDialog(BuildContext context, Note document) {
+    // set up the buttons
+    Widget cancelButton = ElevatedButton(
+      child: const Text("No"),
+      onPressed: () {
+        Navigator.of(context).pop();
+      },
+    );
+    Widget continueButton = ElevatedButton(
+      child: const Text("Yes"),
+      onPressed: () {
+        NoteService.deleteNote(document).whenComplete(() {
+          Navigator.of(context).pop();
+        });
+      },
+    );
+
+    // set up the AlertDialog
+    AlertDialog alert = AlertDialog(
+      title: const Text("Delete Note"),
+      content: const Text("Are you sure to delete Note?"),
+      actions: [cancelButton, continueButton],
+    );
+
+    // show the dialog
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return alert;
       },
     );
   }
