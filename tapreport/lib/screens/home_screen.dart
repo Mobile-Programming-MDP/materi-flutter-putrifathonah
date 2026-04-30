@@ -108,6 +108,14 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: (){
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context)=> const AddPostScreen()),
+              );
+            },
+            child: const Icon(Icons.add),
+          )
         ),
       ),
     );
