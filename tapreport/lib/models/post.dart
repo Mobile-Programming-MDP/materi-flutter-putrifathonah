@@ -2,43 +2,42 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Post {
   String? id;
-  final String image;
-  final String description;
-  final String category;
-  final String latitude;
-  final String longitude;
-  final Timestamp? createdAt;
-  final Timestamp? updatedAt;
-  final String userId;
-  final String userFullname;
+  String? image;
+  String? description;
+  String? category;
+  Timestamp? createdAt;
+  Timestamp? updatedAt;
+  String? latitude;
+  String? longitude;
+  String? userId;
+  String? userFullName;
 
   Post({
     this.id,
-    required this.image,
-    required this.description,
-    required this.category,
-    required this.latitude,
-    required this.longitude,
+    this.image,
+    this.description,
+    this.category,
     this.createdAt,
     this.updatedAt,
-    required this.userId,
-    required this.userFullname,
+    this.latitude,
+    this.longitude,
+    this.userId,
+    this.userFullName,
   });
 
   factory Post.fromDocument(DocumentSnapshot doc) {
-    final data = doc.data() as Map<String, dynamic>;
-
+    Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
     return Post(
       id: doc.id,
-      image: data['image'] ?? '',
-      description: data['description'] ?? '',
-      category: data['category'] ?? '',
-      latitude: data['latitude'] ?? '',
-      longitude: data['longitude'] ?? '',
-      createdAt: data['created_at'],
-      updatedAt: data['updated_at'],
-      userId: data['user_id'] ?? '',
-      userFullname: data['user_fullname'] ?? '',
+      image: doc['image'],
+      description: data['description'],
+      category: data['category'],
+      createdAt: data['created_at'] as Timestamp,
+      updatedAt: data['updated_at'] as Timestamp,
+      latitude: data['latitude'],
+      longitude: data['longitude'],
+      userId: data['user_id'],
+      userFullName: data['user_full_name'],
     );
   }
 
@@ -49,10 +48,10 @@ class Post {
       'category': category,
       'latitude': latitude,
       'longitude': longitude,
-      'created_at': createdAt ?? FieldValue.serverTimestamp(),
+      'created_at': createdAt,
       'updated_at': updatedAt,
       'user_id': userId,
-      'user_fullname': userFullname,
+      'user_full_name': userFullName,
     };
   }
 }

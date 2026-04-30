@@ -1,6 +1,7 @@
+import 'package:tapreport/screens/add_post_screen.dart';
+import 'package:tapreport/screens/sign_in.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'sign_in.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -10,63 +11,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String? _idToken = "";
-  String? _uid = "";
-  String? _email = "";
-
-  // 1. Menambahkan initState agar data otomatis dimuat saat layar dibuka
-  @override
-  void initState() {
-    super.initState();
-    getFirebaseAuthUser();
-  }
-
-  Future<void> signOut(BuildContext context) async {
+  Future<void> signOut() async {
     await FirebaseAuth.instance.signOut();
+    if (!mounted) return;
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(
-        builder: (context) => const SignInScreen(),
-      ), // Pastikan menggunakan const jika SignInScreen mendukungnya
+      MaterialPageRoute(builder: (context) => SignInScreen()),
       (route) => false,
     );
   }
 
-  Future<String?> getTokenAuth() async {
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      String? idToken = await user.getIdToken(true);
-      return idToken;
-    }
-
-    return null;
-  }
-
-  Future<void> getFirebaseAuthUser() async {
-    User? user = FirebaseAuth.instance.currentUser;
-
-    if (user != null) {
-      // Mengambil data saat ini secara sinkron
-      String uid = user.uid;
-      String? email = user.email;
-
-      // Mengambil token secara asinkron
-      String? token = await user.getIdToken(true);
-
-      // Memperbarui UI dalam satu setState
-      setState(() {
-        _uid = uid;
-        _email = email;
-        _idToken = token;
-      });
-    }
-  }
-
-  // 2. Memperbaiki null check operator (!) agar tidak error jika nama kosong
-  String generateAvatarUrl(String? fullname) {
-    final formattedName = (fullname ?? 'User').trim().replaceAll(' ', '+');
-    return 'https://ui-avatars.com/api/?name=$formattedName&color=7F9CF5&background=EBF4FF';
+  //Fungsi untuk membuat url foto profile / avatar
+  String generateAvatarUrl(String? fullName) {
+    final formattedName = fullName!.trim().replaceAll(' ', '+');
+    return 'https://ui-avatars.com/api/?name=$formattedName&color=FFFFFF&background=000000';
   }
 
   @override
@@ -74,49 +32,41 @@ class _HomeScreenState extends State<HomeScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("Home Screen"),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
           IconButton(
-            // 3. Tombol sign out sudah terhubung
             onPressed: () {
-              signOut(context);
+              signOut();
             },
-            icon: const Icon(Icons.logout),
+            icon: Icon(Icons.logout),
+            tooltip: "Sign Out",
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: SizedBox(
-          width: double.infinity,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Image.network(
-                generateAvatarUrl(
-                  FirebaseAuth.instance.currentUser?.displayName,
-                ),
-                width: 100,
-                height: 100,
-              ),
-              const SizedBox(height: 20),
-              const Text("Hello!"),
-              Text("UID: $_uid"),
-              Text("Email: $_email"),
-              Text(
-                "Token: ${_idToken != null && _idToken!.length > 15 ? _idToken!.substring(0, 15) + '...' : _idToken}",
-              ),
-            ],
+      body: Column(
+        children: [
+          Image.network(
+            generateAvatarUrl(
+              FirebaseAuth.instance.currentUser?.displayName.toString(),
+            ),
+            width: 100,
+            height: 100,
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: (){
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context)=> const AddPostScreen()),
-              );
-            },
-            child: const Icon(Icons.add),
-          )
-        ),
+          SizedBox(height: 8.0),
+          Text(
+            FirebaseAuth.instance.currentUser!.displayName!,
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          SizedBox(height: 16.0),
+          const Center(child: Text("You Have Been Signed In!")),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const AddPostScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
