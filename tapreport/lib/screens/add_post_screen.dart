@@ -197,7 +197,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
           latitude: _latitude,
           longitude: _longitude,
           userId: userId,
-          userFullName: fullName,
+          fullName: fullName,
         ),
       );
       if (!mounted) return;

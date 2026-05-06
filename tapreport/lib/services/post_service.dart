@@ -17,7 +17,7 @@ class PostService {
       'created_at': FieldValue.serverTimestamp(),
       'updated_at': FieldValue.serverTimestamp(),
       'user_id': post.userId,
-      'user_full_name': post.userFullName,
+      'full_name': post.fullName,
     };
     await _postsCollection.add(newPost);
   }
@@ -32,7 +32,7 @@ class PostService {
       'created_at': post.createdAt,
       'updated_at': FieldValue.serverTimestamp(),
       'user_id': post.userId,
-      'user_full_name': post.userFullName,
+      'full_name': post.fullName,
     };
 
     await _postsCollection.doc(post.id).update(updatedPost);
@@ -64,7 +64,35 @@ class PostService {
           latitude: data['latitude'],
           longitude: data['longitude'],
           userId: data['user_id'],
-          userFullName: data['user_full_name'],
+          fullName: data['full_name'],
+        );
+      }).toList();
+    });
+  }
+
+  static Stream<List<Post>> getPostListByCategory(String? category) {
+    Query query = _postsCollection;
+    if (category != null) {
+      query = query.where('category', isEqualTo: category);
+    }
+    return query.snapshots().map((snapshot) {
+      return snapshot.docs.map((doc) {
+        Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        return Post(
+          id: doc.id,
+          image: data['image'],
+          description: data['description'],
+          category: data['category'],
+          createdAt: data['created_at'] != null
+              ? data['created_at'] as Timestamp
+              : null,
+          updatedAt: data['updated_at'] != null
+              ? data['updated_at'] as Timestamp
+              : null,
+          latitude: data['latitude'],
+          longitude: data['longitude'],
+          userId: data['user_id'],
+          fullName: data['full_name'],
         );
       }).toList();
     });
