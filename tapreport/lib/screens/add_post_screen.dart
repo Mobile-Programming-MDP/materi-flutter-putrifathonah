@@ -5,6 +5,7 @@ import 'package:tapreport/services/post_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
 
 class AddPostScreen extends StatefulWidget {
@@ -15,13 +16,18 @@ class AddPostScreen extends StatefulWidget {
 }
 
 class _AddPostScreenState extends State<AddPostScreen> {
-  final TextEditingController _descriptionController = TextEditingController();
+  final TextEditingController _descriptionController =
+      TextEditingController();
+
   String? _base64Image;
   String? _latitude;
   String? _longitude;
   String? _category;
+
   bool _isSubmitting = false;
   bool _isGettingLocation = false;
+  bool _isGenerating = false;
+
   List<String> get categories {
     return [
       'Jalan Rusak',
@@ -32,61 +38,78 @@ class _AddPostScreenState extends State<AddPostScreen> {
     ];
   }
 
-  //1.Fungsi pick, compress and convert Image
+  // PICK IMAGE
   Future<void> pickImageAndConvert() async {
     final ImagePicker picker = ImagePicker();
-    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    final XFile? image = await picker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 60,
+    );
+
     if (image != null) {
       final bytes = await image.readAsBytes();
+
       setState(() {
         _base64Image = base64Encode(bytes);
       });
     }
   }
 
-  //2. Fungsi Get Geo Location
+  // GET LOCATION
   Future<void> _getLocation() async {
     setState(() {
       _isGettingLocation = true;
     });
+
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      bool serviceEnabled =
+          await Geolocator.isLocationServiceEnabled();
+
       if (!serviceEnabled) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Layanan lokasi dinonaktifkan.")),
+          const SnackBar(
+            content: Text("Layanan lokasi dinonaktifkan."),
+          ),
         );
         return;
       }
 
-      LocationPermission permission = await Geolocator.checkPermission();
+      LocationPermission permission =
+          await Geolocator.checkPermission();
+
       if (permission == LocationPermission.denied) {
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.deniedForever ||
-            permission == LocationPermission.denied) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text("Izin lokasi ditolak.")));
+
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text("Izin lokasi ditolak."),
+            ),
+          );
           return;
         }
       }
 
       final position = await Geolocator.getCurrentPosition(
-        locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
-      ).timeout(const Duration(seconds: 10));
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+        ),
+      );
 
       setState(() {
         _latitude = position.latitude.toString();
         _longitude = position.longitude.toString();
       });
     } catch (e) {
-      debugPrint('Failed to retrieve location: $e');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Gagal mengambil lokasi.")));
-      setState(() {
-        _latitude = null;
-        _longitude = null;
-      });
+      debugPrint("Location Error: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Gagal mengambil lokasi."),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
@@ -96,11 +119,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
     }
   }
 
-  //3. Fungsi tampil pilihan kategori
+  // CATEGORY
   void _showCategorySelect() {
     showModalBottomSheet(
       context: context,
-      builder: (BuildContext context) {
+      builder: (_) {
         return ListView(
           shrinkWrap: true,
           children: categories.map((cat) {
@@ -110,6 +133,7 @@ class _AddPostScreenState extends State<AddPostScreen> {
                 setState(() {
                   _category = cat;
                 });
+
                 Navigator.pop(context);
               },
             );
@@ -119,12 +143,11 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 
-  //4. Fungsi Widget tampil gambar
+  // IMAGE PREVIEW
   Widget _buildImagePreview() {
     if (_base64Image == null) {
       return Container(
         height: 180,
-        width: double.infinity,
         alignment: Alignment.center,
         decoration: BoxDecoration(
           color: Colors.grey.shade200,
@@ -146,50 +169,187 @@ class _AddPostScreenState extends State<AddPostScreen> {
     );
   }
 
-  //5. Fungsi Widget tampil lokasi
+  // LOCATION INFO
   Widget _buildLocationInfo() {
     if (_latitude == null || _longitude == null) {
-      return const Text('Lokasi belum diambil');
+      return const Text("Lokasi belum diambil");
     }
 
     return Text(
-      'Lat: $_latitude\nLng: $_longitude',
+      "Lat: $_latitude\nLng: $_longitude",
       textAlign: TextAlign.center,
     );
   }
 
-  //6. Fungsi submit Post
+  // GENERATE DESCRIPTION WITH AI
+  Future<void> _generateDescriptionWithAI() async {
+    if (_base64Image == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Pilih gambar terlebih dahulu"),
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _isGenerating = true;
+    });
+
+    try {
+      const apiKey = 'YOUR_API_KEY';
+
+      final url = Uri.parse(
+        // disini pake api key sendiri ya, jangan lupa aktifin billing di google cloud console
+        'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=$apiKey',
+      );
+
+      final body = {
+        "contents": [
+          {
+            "parts": [
+              {
+                "text":
+                    """
+Analisa gambar ini.
+
+Tentukan kategori utama dari daftar berikut:
+- Jalan Rusak
+- Lampu Jalan Mati
+- Lawan Arah
+- Merokok di Jalan
+- Tidak Pakai Helm
+
+Lalu buat deskripsi singkat laporan.
+
+Format jawaban:
+Kategori: ...
+Deskripsi: ...
+"""
+              },
+              {
+                "inline_data": {
+                  "mime_type": "image/jpeg",
+                  "data": _base64Image,
+                }
+              }
+            ]
+          }
+        ]
+      };
+
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        final text = data['candidates'][0]['content']['parts'][0]
+            ['text'];
+
+        debugPrint(text);
+
+        final lines = text.split('\n');
+
+        String? category;
+        String? description;
+
+        for (var line in lines) {
+          if (line.toLowerCase().contains('kategori')) {
+            category =
+                line.replaceAll('Kategori:', '').trim();
+          }
+
+          if (line.toLowerCase().contains('deskripsi')) {
+            description =
+                line.replaceAll('Deskripsi:', '').trim();
+          }
+        }
+
+        setState(() {
+          if (category != null && category.isNotEmpty) {
+            _category = category;
+          }
+
+          if (description != null &&
+              description.isNotEmpty) {
+            _descriptionController.text = description;
+          }
+        });
+      } else {
+        debugPrint(response.body);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Gagal generate deskripsi"),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("AI Error: $e");
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Error AI: $e"),
+        ),
+      );
+    } finally {
+      setState(() {
+        _isGenerating = false;
+      });
+    }
+  }
+
+  // SUBMIT POST
   Future<void> _submitPost() async {
     if (_base64Image == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih gambar terlebih dahulu.')),
+        const SnackBar(
+          content: Text("Pilih gambar terlebih dahulu."),
+        ),
       );
       return;
     }
+
     if (_category == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Pilih kategori terlebih dahulu.')),
+        const SnackBar(
+          content: Text("Pilih kategori terlebih dahulu."),
+        ),
       );
       return;
     }
+
     if (_descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Masukkan deskripsi terlebih dahulu.')),
+        const SnackBar(
+          content: Text("Masukkan deskripsi."),
+        ),
       );
       return;
     }
+
     setState(() {
       _isSubmitting = true;
     });
 
-    //ambil user id dan full name dari firebaseauth
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    final fullName = FirebaseAuth.instance.currentUser?.displayName;
     try {
       if (_latitude == null || _longitude == null) {
         await _getLocation();
       }
-      PostService.addPost(
+
+      final userId =
+          FirebaseAuth.instance.currentUser?.uid;
+
+      final fullName =
+          FirebaseAuth.instance.currentUser?.displayName;
+
+      await PostService.addPost(
         Post(
           image: _base64Image,
           description: _descriptionController.text,
@@ -200,22 +360,26 @@ class _AddPostScreenState extends State<AddPostScreen> {
           fullName: fullName,
         ),
       );
+
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Posting berhasil disimpan")));
-      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Posting berhasil disimpan"),
+        ),
+      );
+
+      Navigator.pop(context);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Posting gagal disimpan : $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Posting gagal: $e"),
+        ),
+      );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      setState(() {
+        _isSubmitting = false;
+      });
     }
   }
 
@@ -228,54 +392,91 @@ class _AddPostScreenState extends State<AddPostScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text("Add new post")),
+      appBar: AppBar(
+        title: const Text("Add New Post"),
+      ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildImagePreview(),
+
             const SizedBox(height: 12),
+
             OutlinedButton(
-              onPressed: _isSubmitting ? null : pickImageAndConvert,
-              child: const Text('Pick Image'),
+              onPressed:
+                  _isSubmitting ? null : pickImageAndConvert,
+              child: const Text("Pick Image"),
             ),
+
+            const SizedBox(height: 12),
+
+            ElevatedButton(
+              onPressed: _isGenerating
+                  ? null
+                  : _generateDescriptionWithAI,
+              child: Text(
+                _isGenerating
+                    ? "Generating..."
+                    : "Generate AI Description",
+              ),
+            ),
+
             const SizedBox(height: 16),
+
             OutlinedButton(
-              onPressed: _isSubmitting ? null : _showCategorySelect,
-              child: const Text('Select Category'),
+              onPressed:
+                  _isSubmitting ? null : _showCategorySelect,
+              child: const Text("Select Category"),
             ),
+
             const SizedBox(height: 8),
+
             Text(
               _category ?? 'Belum memilih kategori',
               textAlign: TextAlign.center,
-              style: const TextStyle(fontWeight: FontWeight.w500),
             ),
+
             const SizedBox(height: 16),
+
             TextField(
               controller: _descriptionController,
               maxLines: 4,
               decoration: const InputDecoration(
                 labelText: 'Deskripsi',
-                hintText: 'Masukkan deskripsi laporan',
                 border: OutlineInputBorder(),
               ),
             ),
+
             const SizedBox(height: 16),
+
             OutlinedButton(
-              onPressed: (_isSubmitting || _isGettingLocation)
-                  ? null
-                  : _getLocation,
+              onPressed:
+                  (_isSubmitting || _isGettingLocation)
+                      ? null
+                      : _getLocation,
               child: Text(
-                _isGettingLocation ? 'Mengambil Lokasi...' : 'Get Location',
+                _isGettingLocation
+                    ? 'Mengambil Lokasi...'
+                    : 'Get Location',
               ),
             ),
+
             const SizedBox(height: 8),
+
             _buildLocationInfo(),
+
             const SizedBox(height: 24),
+
             ElevatedButton(
-              onPressed: _isSubmitting ? null : _submitPost,
-              child: Text(_isSubmitting ? 'Submitting...' : 'Submit'),
+              onPressed:
+                  _isSubmitting ? null : _submitPost,
+              child: Text(
+                _isSubmitting
+                    ? 'Submitting...'
+                    : 'Submit',
+              ),
             ),
           ],
         ),
